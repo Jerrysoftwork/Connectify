@@ -6,6 +6,7 @@ function Feed() {
   const [posts, setPosts] = useState([]);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
+  const [following, setFollowing] = useState([]); // track who current user follows
 
   // ✅ Fetch current user
   useEffect(() => {
@@ -14,13 +15,19 @@ function Feed() {
         data: { user },
       } = await supabase.auth.getUser();
       setUser(user);
+
+      if (user) {
+        fetchFollowing(user.id);
+      }
     };
     getUser();
 
-    // Listen for login/logout
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_, session) => {
         setUser(session?.user ?? null);
+        if (session?.user) {
+          fetchFollowing(session.user.id);
+        }
       }
     );
 
@@ -33,7 +40,7 @@ function Feed() {
   const fetchPosts = async () => {
     const { data, error } = await supabase
       .from("posts")
-      .select("*")
+      .select("*, user_id")
       .order("created_at", { ascending: false });
     if (!error) {
       setPosts(data);
@@ -43,6 +50,18 @@ function Feed() {
   useEffect(() => {
     fetchPosts();
   }, []);
+
+  // ✅ Fetch who current user is following
+  const fetchFollowing = async (userId) => {
+    const { data, error } = await supabase
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", userId);
+
+    if (!error) {
+      setFollowing(data.map((f) => f.following_id));
+    }
+  };
 
   // ✅ Create a new post
   const createPost = async () => {
@@ -60,6 +79,34 @@ function Feed() {
     if (!error) {
       setContent("");
       fetchPosts(); // refresh feed
+    }
+  };
+
+  // ✅ Follow user
+  const followUser = async (targetId) => {
+    if (!user) return;
+    const { error } = await supabase.from("follows").insert([
+      {
+        follower_id: user.id,
+        following_id: targetId,
+      },
+    ]);
+    if (!error) {
+      setFollowing([...following, targetId]);
+    }
+  };
+
+  // ✅ Unfollow user
+  const unfollowUser = async (targetId) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from("follows")
+      .delete()
+      .eq("follower_id", user.id)
+      .eq("following_id", targetId);
+
+    if (!error) {
+      setFollowing(following.filter((id) => id !== targetId));
     }
   };
 
@@ -100,6 +147,25 @@ function Feed() {
               <p className="text-sm text-gray-500">
                 Posted on {new Date(post.created_at).toLocaleString()}
               </p>
+
+              {/* Follow/Unfollow Button */}
+              {post.user_id !== user.id && (
+                following.includes(post.user_id) ? (
+                  <button
+                    onClick={() => unfollowUser(post.user_id)}
+                    className="mt-2 bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                  >
+                    Unfollow
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => followUser(post.user_id)}
+                    className="mt-2 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                  >
+                    Follow
+                  </button>
+                )
+              )}
             </div>
           ))}
 
