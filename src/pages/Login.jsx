@@ -1,30 +1,26 @@
 import { useState } from "react";
-import { supabase } from "../supabaseClient"; // fixed path
+import { supabase } from "../supabaseClient";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Sign up new user
+  // Email/Password Sign Up
   const signUp = async () => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
     });
     if (error) {
-      if (error.message.includes("401")) {
-        setErrorMsg("❌ Email/Password signup is not enabled in Supabase.");
-      } else {
-        setErrorMsg(`❌ Signup failed: ${error.message}`);
-      }
+      setErrorMsg(`❌ Signup failed: ${error.message}`);
     } else {
       alert("✅ Signup successful! Please check your email to confirm.");
       setErrorMsg("");
     }
   };
 
-  // Sign in existing user
+  // Email/Password Sign In
   const signIn = async () => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -33,14 +29,17 @@ function Login() {
     if (error) {
       setErrorMsg(`❌ Login failed: ${error.message}`);
     } else {
-      window.location.href = "/feed"; // redirect to feed
+      window.location.href = "/feed"; // redirect after login
     }
   };
 
-  // Google login
+  // Google OAuth Login
   const signInWithGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
+      options: {
+        redirectTo: "http://localhost:5173/feed", // 👈 redirect here after login
+      },
     });
     if (error) {
       setErrorMsg(`❌ Google login failed: ${error.message}`);
@@ -52,7 +51,7 @@ function Login() {
       <div className="p-8 bg-white shadow-lg rounded-lg text-center w-80">
         <h1 className="text-3xl font-bold mb-6 text-blue-600">Connectify 🚀</h1>
 
-        {/* Email input */}
+        {/* Email Input */}
         <input
           type="email"
           placeholder="Email"
@@ -61,4 +60,42 @@ function Login() {
           className="mb-2 w-full border rounded px-3 py-2"
         />
 
-        {/* Password inpu*
+        {/* Password Input */}
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="mb-4 w-full border rounded px-3 py-2"
+        />
+
+        {/* Error Message */}
+        {errorMsg && <p className="text-red-500 text-sm mb-4">{errorMsg}</p>}
+
+        {/* Buttons */}
+        <button
+          onClick={signIn}
+          className="bg-blue-600 text-white px-4 py-2 rounded w-full mb-2 hover:bg-blue-700"
+        >
+          Login
+        </button>
+
+        <button
+          onClick={signUp}
+          className="bg-green-600 text-white px-4 py-2 rounded w-full mb-2 hover:bg-green-700"
+        >
+          Register
+        </button>
+
+        <button
+          onClick={signInWithGoogle}
+          className="bg-red-600 text-white px-4 py-2 rounded w-full hover:bg-red-700"
+        >
+          Login with Google
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default Login;
