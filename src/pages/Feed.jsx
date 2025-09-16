@@ -1,33 +1,46 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
+import { useNavigate } from "react-router-dom";
 
 function Feed() {
   const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    // Get current session
     const getUser = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      setUser(user);
+
+      if (!user) {
+        navigate("/"); // 👈 redirect to login if no user
+      } else {
+        setUser(user);
+      }
     };
 
     getUser();
 
+    // Listen for auth changes (login/logout)
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_, session) => {
-        setUser(session?.user ?? null);
+        if (!session?.user) {
+          navigate("/"); // 👈 kick back to login if logged out
+        } else {
+          setUser(session.user);
+        }
       }
     );
 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   const logout = async () => {
     await supabase.auth.signOut();
-    window.location.href = "/";
+    navigate("/"); // 👈 send to login after logout
   };
 
   return (
@@ -38,6 +51,7 @@ function Feed() {
             Welcome to Connectify 🎉
           </h1>
 
+          {/* Avatar */}
           {user.user_metadata?.avatar_url && (
             <img
               src={user.user_metadata.avatar_url}
@@ -46,11 +60,13 @@ function Feed() {
             />
           )}
 
+          {/* Name & Email */}
           <p className="text-lg font-semibold text-gray-800">
             {user.user_metadata?.full_name || "Anonymous User"}
           </p>
           <p className="text-gray-600">{user.email}</p>
 
+          {/* Logout button */}
           <button
             onClick={logout}
             className="mt-6 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
@@ -59,7 +75,9 @@ function Feed() {
           </button>
         </div>
       ) : (
-        <p className="text-center text-gray-500">⏳ Loading user info...</p>
+        <p className="text-center text-gray-500">
+          ⏳ Loading user information...
+        </p>
       )}
     </div>
   );
