@@ -32,13 +32,19 @@ function Login() {
 
   // Google OAuth Login
   const signInWithGoogle = async () => {
+    const redirectTo =
+      window.location.hostname === "localhost"
+        ? "http://localhost:5173/feed" // 👈 local redirect
+        : "https://yvdjtaaphmztiaigawow.supabase.co/auth/v1/callback?redirect=/feed"; 
+        // 👈 production redirect via Supabase
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin + "/feed", 
-        // e.g., http://localhost:5173/feed OR deployed URL/feed
+        redirectTo,
       },
     });
+
     if (error) {
       setErrorMsg(`❌ Google login failed: ${error.message}`);
     }
