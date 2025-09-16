@@ -1,11 +1,26 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
+import PostForm from "./PostForm";
 
 function Feed() {
   const [user, setUser] = useState(null);
+  const [posts, setPosts] = useState([]);
+
+  // fetch posts
+  const fetchPosts = async () => {
+    let { data, error } = await supabase
+      .from("posts")
+      .select("id, content, created_at, user_id, auth_users: user_id (email)")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching posts:", error.message);
+    } else {
+      setPosts(data);
+    }
+  };
 
   useEffect(() => {
-    // Get current logged-in user
     const getUser = async () => {
       const {
         data: { user },
@@ -14,17 +29,7 @@ function Feed() {
     };
 
     getUser();
-
-    // Listen for auth changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (_, session) => {
-        setUser(session?.user ?? null);
-      }
-    );
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
+    fetchPosts();
   }, []);
 
   const logout = async () => {
@@ -33,45 +38,39 @@ function Feed() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
+    <div className="p-6 max-w-2xl mx-auto">
       {user ? (
-        <div className="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6 text-center">
-          {/* Avatar */}
-          {user.user_metadata?.avatar_url ? (
-            <img
-              src={user.user_metadata.avatar_url}
-              alt="Profile"
-              className="w-24 h-24 rounded-full mx-auto mb-4 shadow-md"
-            />
-          ) : (
-            <div className="w-24 h-24 flex items-center justify-center rounded-full mx-auto mb-4 bg-gray-300 text-2xl font-bold text-gray-700">
-              {user.email[0].toUpperCase()}
-            </div>
-          )}
+        <>
+          {/* Post Form */}
+          <PostForm onPostCreated={fetchPosts} />
 
-          {/* Name */}
-          <h1 className="text-2xl font-bold text-blue-600 mb-1">
-            {user.user_metadata?.full_name || "Anonymous User"}
-          </h1>
+          {/* Posts List */}
+          <div>
+            {posts.map((post) => (
+              <div
+                key={post.id}
+                className="bg-white shadow-md rounded-lg p-4 mb-4"
+              >
+                <p className="text-gray-800">{post.content}</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Posted by {post.auth_users?.email || "Unknown"} •{" "}
+                  {new Date(post.created_at).toLocaleString()}
+                </p>
+              </div>
+            ))}
+          </div>
 
-          {/* Email */}
-          <p className="text-gray-600 mb-4">{user.email}</p>
-
-          {/* Welcome text */}
-          <p className="text-gray-700 mb-6">
-            🎉 Welcome back to <span className="font-semibold">Connectify</span>!
-          </p>
-
-          {/* Logout button */}
           <button
             onClick={logout}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg shadow hover:bg-red-700 transition"
+            className="mt-6 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
           >
             Logout
           </button>
-        </div>
+        </>
       ) : (
-        <p className="text-center text-gray-500">⏳ Loading user...</p>
+        <p className="text-center text-gray-500">
+          ⏳ Loading user information...
+        </p>
       )}
     </div>
   );
