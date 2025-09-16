@@ -8,14 +8,11 @@ function Login() {
 
   // Email/Password Sign Up
   const signUp = async () => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signUp({ email, password });
     if (error) {
       setErrorMsg(`❌ Signup failed: ${error.message}`);
     } else {
-      alert("✅ Signup successful! Please check your email to confirm.");
+      alert("✅ Signup successful! Check your email to confirm.");
       setErrorMsg("");
     }
   };
@@ -38,7 +35,8 @@ function Login() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: "http://localhost:5173/feed", // 👈 redirect here after login
+        redirectTo: window.location.origin + "/feed", 
+        // e.g., http://localhost:5173/feed OR deployed URL/feed
       },
     });
     if (error) {
@@ -51,7 +49,6 @@ function Login() {
       <div className="p-8 bg-white shadow-lg rounded-lg text-center w-80">
         <h1 className="text-3xl font-bold mb-6 text-blue-600">Connectify 🚀</h1>
 
-        {/* Email Input */}
         <input
           type="email"
           placeholder="Email"
@@ -60,7 +57,6 @@ function Login() {
           className="mb-2 w-full border rounded px-3 py-2"
         />
 
-        {/* Password Input */}
         <input
           type="password"
           placeholder="Password"
@@ -69,10 +65,8 @@ function Login() {
           className="mb-4 w-full border rounded px-3 py-2"
         />
 
-        {/* Error Message */}
         {errorMsg && <p className="text-red-500 text-sm mb-4">{errorMsg}</p>}
 
-        {/* Buttons */}
         <button
           onClick={signIn}
           className="bg-blue-600 text-white px-4 py-2 rounded w-full mb-2 hover:bg-blue-700"
