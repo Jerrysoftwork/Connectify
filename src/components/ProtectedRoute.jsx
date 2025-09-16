@@ -1,26 +1,27 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../supabaseClient";
 import { Navigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
 
 function ProtectedRoute({ children }) {
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const checkUser = async () => {
+    const checkSession = async () => {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      setUser(user);
+      setUser(session?.user || null);
       setLoading(false);
     };
 
-    checkUser();
+    checkSession();
 
+    // Listen for login/logout events
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_, session) => {
-        setUser(session?.user ?? null);
+        setUser(session?.user || null);
       }
     );
 
@@ -30,11 +31,16 @@ function ProtectedRoute({ children }) {
   }, []);
 
   if (loading) {
-    return <p className="text-center mt-10">⏳ Checking authentication...</p>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <p className="ml-3 text-blue-600 font-semibold">Loading...</p>
+      </div>
+    );
   }
 
   if (!user) {
-    return <Navigate to="/" replace />; // 👈 redirect to login if not logged in
+    return <Navigate to="/" replace />;
   }
 
   return children;
