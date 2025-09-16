@@ -5,7 +5,6 @@ function Feed() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Get current session
     const getUser = async () => {
       const {
         data: { user },
@@ -15,7 +14,6 @@ function Feed() {
 
     getUser();
 
-    // Listen for auth changes (login/logout)
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_, session) => {
         setUser(session?.user ?? null);
@@ -40,7 +38,6 @@ function Feed() {
             Welcome to Connectify 🎉
           </h1>
 
-          {/* Avatar */}
           {user.user_metadata?.avatar_url && (
             <img
               src={user.user_metadata.avatar_url}
@@ -49,13 +46,11 @@ function Feed() {
             />
           )}
 
-          {/* Name & Email */}
           <p className="text-lg font-semibold text-gray-800">
             {user.user_metadata?.full_name || "Anonymous User"}
           </p>
           <p className="text-gray-600">{user.email}</p>
 
-          {/* Logout button */}
           <button
             onClick={logout}
             className="mt-6 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
@@ -64,9 +59,7 @@ function Feed() {
           </button>
         </div>
       ) : (
-        <p className="text-center text-gray-500">
-          ⏳ Loading user information...
-        </p>
+        <p className="text-center text-gray-500">⏳ Loading user info...</p>
       )}
     </div>
   );
